@@ -2,8 +2,12 @@ const express = require("express");
 const router = express.Router();
 
 const wrapAsync = require("../utils/wrapAsync.js");
-const Listing = require("../models/listing.js");
-const { isLoggedIn, isOwner, validateListing } = require("../middleware.js");
+const {
+  isLoggedIn,
+  isOwner,
+  validateListing,
+  geoCoding,
+} = require("../middleware.js");
 
 const listingController = require("../controllers/listings.js");
 const multer = require("multer");
@@ -17,16 +21,14 @@ router
     isLoggedIn,
     upload.single("listing[image]"),
     validateListing,
+    geoCoding,
     wrapAsync(listingController.createListing)
   );
 
 //New Route
 router.get("/new", isLoggedIn, listingController.renderNewForm);
 
-router.get("/search", (req, res) => {
-  res.send("Working search");
-});
-// search;
+// search
 router.post("/search", wrapAsync(listingController.search));
 
 router
@@ -37,6 +39,7 @@ router
     isOwner,
     upload.single("listing[image]"),
     validateListing,
+    geoCoding,
     wrapAsync(listingController.updateListing)
   )
   .delete(isLoggedIn, isOwner, wrapAsync(listingController.destroyLising));

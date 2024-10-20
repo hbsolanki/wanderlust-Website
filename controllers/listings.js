@@ -9,13 +9,6 @@ module.exports.index = async (req, res) => {
   res.render("listings/index.ejs", { allListings });
 };
 
-//Temp Search
-module.exports.search = async (req, res) => {
-  let key = req.body.searchKey;
-  let allListings = await Listing.find({ location: key } || { country: key });
-  res.render("listings/index.ejs", { allListings });
-};
-
 module.exports.renderNewForm = (req, res) => {
   res.render("listings/new.ejs");
 };
@@ -40,19 +33,12 @@ module.exports.showListing = async (req, res) => {
 module.exports.createListing = async (req, res, next) => {
   const newListing = new Listing(req.body.listing);
 
-  let response = await geocodingClient
-    .forwardGeocode({
-      query: newListing.location,
-      limit: 1,
-    })
-    .send();
-
   let url = req.file.path;
   let filename = req.file.filename;
 
   newListing.owner = req.user._id;
   newListing.image = { url, filename };
-  newListing.geometry = response.body.features[0].geometry;
+  newListing.geometry = res.locals.geometry;
 
   await newListing.save();
 
@@ -81,8 +67,9 @@ module.exports.updateListing = async (req, res) => {
     let url = req.file.path;
     let filename = req.file.filename;
     listing.image = { url, filename };
-    await listing.save();
   }
+  listing.geometry = res.locals.geometry;
+  await listing.save();
   req.flash("success", "Listing Updated!");
   res.redirect(`/listings/${id}`);
 };
@@ -92,4 +79,11 @@ module.exports.destroyLising = async (req, res) => {
   await Listing.findByIdAndDelete(id);
   req.flash("success", "Listing Deleted!");
   res.redirect("/listings");
+};
+
+//Search
+module.exports.search = async (req, res) => {
+  let key = req.body.searchKey;
+  let allListings = await Listing.find({ location: key } || { country: key });
+  res.render("listings/index.ejs", { allListings });
 };

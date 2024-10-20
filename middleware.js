@@ -4,6 +4,10 @@ const ExpressError = require("./utils/ExpressError.js");
 const { listingSchema } = require("./schema.js");
 const { reviewSchema } = require("./schema.js");
 
+const mbxGeocoding = require("@mapbox/mapbox-sdk/services/geocoding");
+const mapToken = process.env.MAP_TOKEN;
+const geocodingClient = mbxGeocoding({ accessToken: mapToken });
+
 module.exports.isLoggedIn = (req, res, next) => {
   if (!req.isAuthenticated()) {
     req.session.redirectUrl = req.originalUrl;
@@ -57,5 +61,19 @@ module.exports.isReviewAuthor = async (req, res, next) => {
     req.flash("error", "you are not the author of this review");
     return res.redirect(`/listings/${id}`);
   }
+  next();
+};
+
+module.exports.geoCoding = async (req, res, next) => {
+  const newListing = new Listing(req.body.listing);
+
+  let response = await geocodingClient
+    .forwardGeocode({
+      query: newListing.location,
+      limit: 1,
+    })
+    .send();
+  res.locals.geometry = response.body.features[0].geometry;
+
   next();
 };
